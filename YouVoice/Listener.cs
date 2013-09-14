@@ -29,6 +29,8 @@ namespace YouVoice
         public event ListenerEvent OnNext;
         public event ListenerEvent OnPrevious;
         public event ListenerEvent OnExit;
+        public event ListenerEvent OnStartListening;
+        public event ListenerEvent OnStopListening;
         #endregion
 
         public Listener()
@@ -44,35 +46,43 @@ namespace YouVoice
                 Running = false;
                 Listening = false;
             };
+            OnStartListening += () =>
+            {
+                Listening = true;
+            };
+            OnStopListening += () =>
+            {
+                Listening = false;
+            };
         }
 
         public bool Initialise()
         {
             #region Initialising Grammars
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Play", "Start", "Begin" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Play", "Start", "Begin" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture } ));
             Grammars[0].Name = "Play";
 
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Stop", "Halt", "Pause" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Stop", "Halt", "Pause" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
             Grammars[1].Name = "Pause";
 
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Next", "Skip", "Forward", "Skip Forward" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Next", "Skip", "Forward", "Skip Forward" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
             Grammars[2].Name = "Next";
 
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Previous", "Back", "Skip Back" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Previous", "Back", "Skip Back" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
             Grammars[3].Name = "Previous";
 
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Exit", "Quit", "Close" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Exit", "Quit", "Close" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
             Grammars[4].Name = "Exit";
 
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Start Listening" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Start Listening" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
             Grammars[5].Name = "StartListening";
 
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Stop Listening" }.ToArray()))));
+            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Stop Listening" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
             Grammars[6].Name = "StopListening";
             #endregion
 
             // Initialise the recognition engine
-            Recog = new SpeechRecognitionEngine();
+            Recog = new SpeechRecognitionEngine(System.Globalization.CultureInfo.CurrentCulture);
             Recog.SetInputToDefaultAudioDevice();
 
             // Load all grammars
@@ -93,7 +103,7 @@ namespace YouVoice
 
         public void Start()
         {
-            if (ListeningThread.ThreadState == ThreadState.Stopped)
+            if (ListeningThread.ThreadState != ThreadState.Running)
             {
                 Running = true;
                 ListeningThread.Start();
@@ -109,12 +119,21 @@ namespace YouVoice
 
         protected void Listen()
         {
-            Listening = true;
+            OnStartListening();
             while (Running)
             {
                 // Recognise a string and get the grammar it was found from (effectively getting the command,
                 // regardless of which variant of it was used)
-                string GrammarName = Recog.Recognize().Grammar.Name;
+                string GrammarName = string.Empty;
+                try
+                {
+                    GrammarName = Recog.Recognize(TimeSpan.Parse("1")).Grammar.Name;
+                }
+                catch(NullReferenceException)
+                {
+                    // Timeout, no matter. Re-loop
+                    continue;
+                }
 
                 // Match the grammar, fire the relevant event
                 #region Grammar Checking
@@ -136,8 +155,8 @@ namespace YouVoice
                 // See if we need to change whether or not we are listening
                 switch (GrammarName)
                 {
-                    case "StartListening":  Listening = true;   break;
-                    case "StopListening":   Listening = false;  break;
+                    case "StartListening":  OnStartListening(); break;
+                    case "StopListening":   OnStopListening();  break;
                 }
                 
                 #endregion

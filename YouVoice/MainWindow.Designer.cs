@@ -28,51 +28,51 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.Browser = new System.Windows.Forms.WebBrowser();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             this.Status = new System.Windows.Forms.StatusStrip();
-            this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.Player = new AxShockwaveFlashObjects.AxShockwaveFlash();
             this.Status.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Player)).BeginInit();
             this.SuspendLayout();
-            // 
-            // Browser
-            // 
-            this.Browser.AllowWebBrowserDrop = false;
-            this.Browser.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Browser.IsWebBrowserContextMenuEnabled = false;
-            this.Browser.Location = new System.Drawing.Point(0, 0);
-            this.Browser.Margin = new System.Windows.Forms.Padding(3, 3, 3, 22);
-            this.Browser.MinimumSize = new System.Drawing.Size(20, 20);
-            this.Browser.Name = "Browser";
-            this.Browser.Size = new System.Drawing.Size(720, 480);
-            this.Browser.TabIndex = 0;
             // 
             // Status
             // 
             this.Status.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel1});
+            this.StatusLabel});
             this.Status.Location = new System.Drawing.Point(0, 458);
             this.Status.Name = "Status";
             this.Status.Size = new System.Drawing.Size(720, 22);
             this.Status.TabIndex = 1;
             this.Status.Text = "Status";
             // 
-            // toolStripStatusLabel1
+            // StatusLabel
             // 
-            this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(67, 17);
-            this.toolStripStatusLabel1.Text = "StatusLabel";
+            this.StatusLabel.Name = "StatusLabel";
+            this.StatusLabel.Size = new System.Drawing.Size(0, 17);
+            // 
+            // Player
+            // 
+            this.Player.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Player.Enabled = true;
+            this.Player.Location = new System.Drawing.Point(0, 0);
+            this.Player.Name = "Player";
+            this.Player.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("Player.OcxState")));
+            this.Player.Size = new System.Drawing.Size(720, 458);
+            this.Player.TabIndex = 2;
             // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(720, 480);
+            this.Controls.Add(this.Player);
             this.Controls.Add(this.Status);
-            this.Controls.Add(this.Browser);
             this.Name = "MainWindow";
             this.Text = "YouVoice";
             this.Status.ResumeLayout(false);
             this.Status.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Player)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -80,8 +80,8 @@
 
         #endregion
 
-        private System.Windows.Forms.WebBrowser Browser;
         private System.Windows.Forms.StatusStrip Status;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
+        private System.Windows.Forms.ToolStripStatusLabel StatusLabel;
+        private AxShockwaveFlashObjects.AxShockwaveFlash Player;
     }
 }
