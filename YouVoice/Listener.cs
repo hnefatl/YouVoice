@@ -77,6 +77,10 @@ namespace YouVoice
             {
                 Listening = false;
                 Running = false;
+                while (ListeningThread.ThreadState != ThreadState.Stopped)
+                {
+                    Thread.Sleep(100);
+                }
             }
         }
 

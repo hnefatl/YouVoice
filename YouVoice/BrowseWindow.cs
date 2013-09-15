@@ -4,6 +4,9 @@ using System.Data;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using System.Drawing;
+using System.IO;
+using System.Net;
 
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
@@ -32,6 +35,8 @@ namespace YouVoice
             this.CommandReceiver.AddCommand(new Command("Exit", Exit, new List<string>() { "Exit", "Quit", "Close" }));
 
             this.CommandReceiver.Start();
+
+            this.Videos.SelectedIndexChanged += Videos_SelectedIndexChanged;
         }
 
         protected void Search()
@@ -47,6 +52,8 @@ namespace YouVoice
                 Request.Q = SearchBox.Text;
                 Request.Key = Globals.Key;
                 Request.Order = SearchResource.ListRequest.OrderEnum.Relevance;
+                Request.MaxResults = (int)SearchResults.Value;
+                Request.Type = "video,playlist";
 
                 // Acquire response
                 SearchListResponse Response = Request.Execute();
@@ -54,19 +61,35 @@ namespace YouVoice
                 // Prcoess response
                 // Remove all current videos
                 Videos.Items.Clear();
-                foreach (SearchResult r in Response.Items)
+                for (int x = 0; x < Response.Items.Count; x++)
                 {
-                    ListViewItem NewItem = new ListViewItem();
-                    switch (r.Id.Kind)
+                    VideoListViewItem NewItem = new VideoListViewItem();
+                    // Download the thumbnail and store
+                    if (!string.IsNullOrWhiteSpace(Response.Items[x].Snippet.Thumbnails.Default.Url))
+                    {
+                        WebRequest ThumbnailRequest = WebRequest.Create(Response.Items[x].Snippet.Thumbnails.Default.Url);
+                        NewItem.Thumbnail = Image.FromStream(ThumbnailRequest.GetResponse().GetResponseStream());
+                    }
+                    NewItem.Description = Response.Items[x].Snippet.Description;
+
+                    NewItem.Text = Convert.ToString(x + 1);
+
+                    switch (Response.Items[x].Id.Kind)
                     {
                         case "youtube#video":
-                            NewItem.Text = (r.Snippet.Title + " " + r.Id.VideoId);
+                            NewItem.VideoUrl = Response.Items[x].Id.VideoId;
+                            NewItem.SubItems.Add(Response.Items[x].Snippet.Title);
+                            NewItem.SubItems.Add("Video");
                             break;
 
                         case "youtube#playlist":
-                            NewItem.Text = (r.Snippet.Title + " " + r.Id.PlaylistId);
+                            NewItem.PlaylistUrl = Response.Items[x].Id.PlaylistId;
+                            NewItem.SubItems.Add(Response.Items[x].Snippet.Title);
+                            NewItem.SubItems.Add("Playlist");
                             break;
                     }
+
+                    NewItem.SubItems.Add(Response.Items[x].Snippet.ChannelTitle);
 
                     Videos.Items.Add(NewItem);
                 }
@@ -89,5 +112,40 @@ namespace YouVoice
         {
             Search();
         }
+
+        private void Videos_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ListView Sender = (ListView)sender;
+            if (Sender.SelectedItems.Count > 0)
+            {
+                VideoListViewItem Selected = Sender.SelectedItems[0] as VideoListViewItem;
+
+                // Load the image
+                VideoThumbnail.Image = Selected.Thumbnail;
+                VideoThumbnail.Width = Selected.Thumbnail.Width;
+                VideoThumbnail.Height = Selected.Thumbnail.Height;
+
+                // Override the description text
+                VideoDescription.Text = Selected.Description;
+
+                // Resize the description to accommodate for the thumbnail
+                VideoDescription.Location = new Point(VideoDescription.Location.X, VideoThumbnail.Height + (11 * 2));
+                VideoDescription.Height = ((this.Height - 22) - 63) - VideoThumbnail.Height;
+            }
+        }
+    }
+
+    class VideoListViewItem : ListViewItem
+    {
+        public VideoListViewItem()
+        {
+            VideoUrl = null;
+            PlaylistUrl = null;
+        }
+
+        public string VideoUrl { get; set; }
+        public string PlaylistUrl { get; set; }
+        public Image Thumbnail { get; set; }
+        public string Description { get; set; }
     }
 }

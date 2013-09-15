@@ -11,7 +11,22 @@ namespace YouVoice
 {
     public static class Globals
     {
-        public static string Key = "AI39si7nTz7HOVT3MPUw7Fg1sXOXKfu78LeqT7-0HWHik1CG3QVvVhc1jb4t8kHkm0x9C_E_oU9rOgSbpDOHOLyVo-eEoYK8iQ";
-        public static YouTubeService Youtube = new YouTubeService(new BaseClientService.Initializer() { ApiKey = Key });
+        public static bool Initialise()
+        {
+            try
+            {
+                Key = "AIzaSyBJJ6oOlj33qVIL1uwAAE_B2knN6FTiaQE";
+                Youtube = new YouTubeService(new BaseClientService.Initializer() { ApiKey = Key });
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static string Key;
+        public static YouTubeService Youtube;
     }
 }

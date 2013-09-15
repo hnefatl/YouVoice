@@ -220,5 +220,12 @@ namespace YouVoice
             }
         }
         #endregion
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            CommandReceiver.Stop();
+
+            base.OnClosing(e);
+        }
     }
 }

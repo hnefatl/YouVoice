@@ -14,6 +14,10 @@ namespace YouVoice
         [STAThread]
         static void Main()
         {
+            if (!Globals.Initialise())
+            {
+                return;
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainWindow());
