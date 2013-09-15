@@ -14,91 +14,52 @@ namespace YouVoice
         #region Members
 
         protected SpeechRecognitionEngine Recog;
-        protected List<Grammar> Grammars;
 
-        protected bool Listening;
-        protected bool Running;
+        public bool Listening;
+        public bool Running;
 
         protected Thread ListeningThread;
 
-        #endregion Members
+        public List<Command> Commands;
 
-        #region Events
-        public event ListenerEvent OnPlay;
-        public event ListenerEvent OnPause;
-        public event ListenerEvent OnNext;
-        public event ListenerEvent OnPrevious;
-        public event ListenerEvent OnExit;
-        public event ListenerEvent OnStartListening;
-        public event ListenerEvent OnStopListening;
         #endregion
 
-        public Listener()
+        public Listener(bool UseBabbleGuard = true)
         {
             // Give base values to variables
-            Grammars = new List<Grammar>();
-            Listening = false;
-            Running = false;
-
-            // Set up OnExit clause to stop thread
-            OnExit += () =>
-            {
-                Running = false;
-                Listening = false;
-            };
-            OnStartListening += () =>
-            {
-                Listening = true;
-            };
-            OnStopListening += () =>
-            {
-                Listening = false;
-            };
-        }
-
-        public bool Initialise()
-        {
-            #region Initialising Grammars
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Play", "Start", "Begin" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture } ));
-            Grammars[0].Name = "Play";
-
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Stop", "Halt", "Pause" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
-            Grammars[1].Name = "Pause";
-
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Next", "Skip", "Forward", "Skip Forward" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
-            Grammars[2].Name = "Next";
-
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Previous", "Back", "Skip Back" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
-            Grammars[3].Name = "Previous";
-
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Exit", "Quit", "Close" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
-            Grammars[4].Name = "Exit";
-
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Start Listening" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
-            Grammars[5].Name = "StartListening";
-
-            Grammars.Add(new Grammar(new GrammarBuilder(new Choices(new List<string>() { "Stop Listening" }.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }));
-            Grammars[6].Name = "StopListening";
-            #endregion
-
-            // Initialise the recognition engine
             Recog = new SpeechRecognitionEngine(System.Globalization.CultureInfo.CurrentCulture);
-            Recog.SetInputToDefaultAudioDevice();
-
-            // Load all grammars
-            for (int x = 0; x < Grammars.Count; x++)
-            {
-                Recog.LoadGrammar(Grammars[x]);
-                if (!Grammars[x].Loaded)
-                {
-                    return false;
-                }
-            }
+            Commands = new List<Command>();
 
             // Initialise the Listening thread
             ListeningThread = new Thread(new ThreadStart(Listen));
 
-            return true;
+            Listening = false;
+            Running = false;
+
+            if (UseBabbleGuard)
+            {
+                // Implement a babble guard - protection from background noise
+                AddCommand(new Command("Babble", () => { }, new List<string>() { "..." }));
+            }
+        }
+
+        public void AddCommand(Command NewCommand)
+        {
+            Commands.Add(NewCommand);
+            Recog.LoadGrammar(new Grammar(new GrammarBuilder(new Choices(NewCommand.Commands.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }) { Name = NewCommand.Name });
+        }
+        public void AddCommand(List<Command> Commands)
+        {
+            foreach (Command c in Commands)
+            {
+                AddCommand(c);
+            }
+        }
+
+        public void UnloadCommands()
+        {
+            Recog.UnloadAllGrammars();
+            Commands.Clear();
         }
 
         public void Start()
@@ -107,19 +68,30 @@ namespace YouVoice
             {
                 Running = true;
                 ListeningThread.Start();
+                Enable();
             }
         }
         public void Stop()
         {
             if (ListeningThread.ThreadState != ThreadState.Stopped)
             {
+                Listening = false;
                 Running = false;
             }
         }
 
+        public void Enable()
+        {
+            Recog.SetInputToDefaultAudioDevice();
+        }
+        public void Disable()
+        {
+            Recog.SetInputToNull();
+        }
+
         protected void Listen()
         {
-            OnStartListening();
+            Listening = true;
             while (Running)
             {
                 // Recognise a string and get the grammar it was found from (effectively getting the command,
@@ -127,39 +99,25 @@ namespace YouVoice
                 string GrammarName = string.Empty;
                 try
                 {
-                    GrammarName = Recog.Recognize(TimeSpan.Parse("1")).Grammar.Name;
+                    // Recognise a command, store the name of the command used
+                    GrammarName = Recog.Recognize().Grammar.Name;
+
+                    // Locate the specific command
+                    for (int x = 0; x < Commands.Count; x++)
+                    {
+                        if (Commands[x].Name == GrammarName)
+                        {
+                            // Fire the command event
+                            Commands[x].OnCommanded();
+                            break;
+                        }
+                    }
                 }
-                catch(NullReferenceException)
+                catch (NullReferenceException)
                 {
                     // Timeout, no matter. Re-loop
                     continue;
                 }
-
-                // Match the grammar, fire the relevant event
-                #region Grammar Checking
-
-                // If we're meant to be receiving commands
-                if (Listening)
-                {
-                    // Run checks on the commands
-                    switch (GrammarName)
-                    {
-                        case "Play":        OnPlay();           break;
-                        case "Pause":       OnPause();          break;
-                        case "Next":        OnNext();           break;
-                        case "Previous":    OnPrevious();       break;
-                        case "Exit":        OnExit();           break;
-                    }
-                }
-
-                // See if we need to change whether or not we are listening
-                switch (GrammarName)
-                {
-                    case "StartListening":  OnStartListening(); break;
-                    case "StopListening":   OnStopListening();  break;
-                }
-                
-                #endregion
             }
         }
     }
