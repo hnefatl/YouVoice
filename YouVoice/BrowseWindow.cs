@@ -16,15 +16,18 @@ namespace YouVoice
 {
     public partial class BrowseWindow : Form
     {
-        #region Members
         protected delegate void VoidDelegate();
         protected delegate void VoidDelegate1Int(int One);
         protected delegate void VoidDelegate1Char(char One);
+        protected delegate void VoidDelegate2String(string One, string Two);
 
+        #region Members
         public string ChosenVideo { get; protected set; }
         public string CurrentSearchTerm { get; protected set; }
 
         protected int SearchResultsQuantity { get; set; }
+
+        SearchListResponse Response;
 
         protected int Page;
 
@@ -40,6 +43,8 @@ namespace YouVoice
         {
             InitializeComponent();
 
+            Videos.Focus();
+
             ChosenVideo = null;
 
             Page = 0;
@@ -51,6 +56,26 @@ namespace YouVoice
             this.CommandReceiver.AddCommand(new Command("Exit", Exit, new List<string>() { "Exit", "Quit", "Close" }));
 
             this.CommandReceiver.AddCommand(new Command("Play", Play, new List<string>() { "Play", "Run", "Watch" }));
+
+            this.CommandReceiver.AddCommand(new Command("Next", NextPage, new List<string>() { "Next", "Next page" }));
+            this.CommandReceiver.AddCommand(new Command("Previous", PreviousPage, new List<string>() { "Previous", "Previous page" }));
+
+            this.CommandReceiver.AddCommand(new Command("Down", () =>
+            {
+
+            }, new List<string>() { "Down", "Scroll down" }));
+
+            this.CommandReceiver.AddCommand(new Command("Spell", () =>
+            {
+                CommandReceiver.Disable();
+                SpellerReceiver.Enable();
+            }, new List<string>() { "Spell", "Start spelling" }));
+
+            this.CommandReceiver.AddCommand(new Command("Dictate", () =>
+            {
+                CommandReceiver.Disable();
+                DictationReceiver.Enable();
+            }, new List<string>() { "Dictate", "Start dictating" }));
             #endregion
 
             #region SpellerReceiver
@@ -62,7 +87,14 @@ namespace YouVoice
                 // Switch controls
                 SpellerReceiver.Disable();
                 CommandReceiver.Enable();
-            }, new List<string>() { "Stop spelling", "Stop" }));
+            }, new List<string>() { "Stop", "Stop spelling" }));
+
+            // Exit spell mode, start dictation mode command
+            this.SpellerReceiver.AddCommand(new Command("Dictate", () =>
+            {
+                SpellerReceiver.Disable();
+                SpellerReceiver.Enable();
+            }, new List<string>() { "Dictate", "Start dictating" }));
 
             // Letters
             for (char CurrentLetter = 'A'; CurrentLetter <= 'Z'; CurrentLetter++)
@@ -98,7 +130,19 @@ namespace YouVoice
             #region DictationReceiver
             this.DictationReceiver = new DictationListener(SearchBox.Text);
 
-            
+            // Stop dictating
+            this.DictationReceiver.AddCommand(new Command("DisableDictate", () =>
+            {
+                DictationReceiver.Disable();
+                CommandReceiver.Enable();
+            }, new List<string>() { "Stop", "Stop dictating" }));
+
+            // Stop dictating, start spelling
+            this.DictationReceiver.AddCommand(new Command("Spell", () =>
+            {
+                SpellerReceiver.Enable();
+                DictationReceiver.Disable();
+            }, new List<string>() { "Spell", "Start spelling" }));
 
             #endregion
 
@@ -111,9 +155,13 @@ namespace YouVoice
         #region Generics
         protected void Search()
         {
+            Search(SearchBox.Text, "");
+        }
+        protected void Search(string SearchTerm, string PageToken)
+        {
             if (this.InvokeRequired)
             {
-                this.Invoke(new VoidDelegate(Search));
+                this.Invoke(new VoidDelegate2String(Search), new string[] { SearchTerm, PageToken });
             }
             else
             {
@@ -125,9 +173,13 @@ namespace YouVoice
                     #region Request
                     // Build the request (videos and playlists)
                     SearchResource.ListRequest Request = Globals.Youtube.Search.List("snippet");
-                    Request.Q = SearchBox.Text;
+                    Request.Q = SearchTerm;
                     Request.Key = Globals.Key;
                     Request.Order = SearchResource.ListRequest.OrderEnum.Relevance;
+                    if (!string.IsNullOrWhiteSpace(PageToken))
+                    {
+                        Request.PageToken = PageToken;
+                    }
                     Request.MaxResults = (int)SearchResults.Value;
                     Request.PrettyPrint = true;
                     Request.Type = "video,playlist";
@@ -135,7 +187,7 @@ namespace YouVoice
 
                     #region Response
                     // Acquire response
-                    SearchListResponse Response = Request.Execute();
+                    Response = Request.Execute();
                     #endregion
 
                     #region Commands
@@ -266,6 +318,16 @@ namespace YouVoice
                 }
             }
         }
+        protected void NextPage()
+        {
+            Search(SearchBox.Text, Response.NextPageToken);
+            Page++;
+        }
+        protected void PreviousPage()
+        {
+            Search(SearchBox.Text, Response.PrevPageToken);
+            Page--;
+        }
         protected void SelectVideo(int Index)
         {
             if (this.InvokeRequired)
@@ -274,7 +336,11 @@ namespace YouVoice
             }
             else
             {
-                Videos.Items[Index].Selected = true;
+                if (Videos.Items.Count >= Index)
+                {
+                    Videos.Items[Index].Selected = true;
+                    Videos.Items[Index].EnsureVisible();
+                }
             }
         }
         protected void Play(int VideoIndex)
@@ -285,8 +351,11 @@ namespace YouVoice
             }
             else
             {
-                ChosenVideo = ((VideoListViewItem)Videos.Items[VideoIndex]).VideoUrl;
-                this.Close();
+                if (Videos.Items.Count >= VideoIndex)
+                {
+                    ChosenVideo = ((VideoListViewItem)Videos.Items[VideoIndex]).VideoUrl;
+                    this.Close();
+                }
             }
         }
         protected void AddLetter(char Letter)

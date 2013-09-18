@@ -26,12 +26,6 @@ namespace YouVoice
                     Output = string.Empty;
                 }
             }, new List<string>() { "Clear", "Reset" }));
-
-            // Stop
-            Commands.Add(new Command("Stop", () =>
-            {
-                Stop();
-            }, new List<string>() { }));
             #endregion
 
             this.Output = Output;
