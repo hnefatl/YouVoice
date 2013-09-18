@@ -113,9 +113,11 @@
     <Compile Include="ConfirmExit.Designer.cs">
       <DependentUpon>ConfirmExit.cs</DependentUpon>
     </Compile>
+    <Compile Include="DictationListener.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Google.Apis.YouTube.v3.cs" />
     <Compile Include="Listener.cs" />
+    <Compile Include="ListenerBase.cs" />
     <Compile Include="MainWindow.cs">
       <SubType>Form</SubType>
     </Compile>

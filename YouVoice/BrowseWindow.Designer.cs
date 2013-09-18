@@ -38,8 +38,8 @@
             this.VideoType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.VideoUploader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.SearchResults = new System.Windows.Forms.NumericUpDown();
-            this.VideoDescription = new System.Windows.Forms.TextBox();
             this.VideoThumbnail = new System.Windows.Forms.PictureBox();
+            this.VideoDescription = new System.Windows.Forms.RichTextBox();
             this.Status.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.SearchResults)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.VideoThumbnail)).BeginInit();
@@ -131,16 +131,6 @@
             0,
             0});
             // 
-            // VideoDescription
-            // 
-            this.VideoDescription.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.VideoDescription.Location = new System.Drawing.Point(478, 90);
-            this.VideoDescription.Multiline = true;
-            this.VideoDescription.Name = "VideoDescription";
-            this.VideoDescription.ReadOnly = true;
-            this.VideoDescription.Size = new System.Drawing.Size(283, 247);
-            this.VideoDescription.TabIndex = 6;
-            // 
             // VideoThumbnail
             // 
             this.VideoThumbnail.Location = new System.Drawing.Point(479, 11);
@@ -149,13 +139,23 @@
             this.VideoThumbnail.TabIndex = 7;
             this.VideoThumbnail.TabStop = false;
             // 
+            // VideoDescription
+            // 
+            this.VideoDescription.Location = new System.Drawing.Point(479, 91);
+            this.VideoDescription.Name = "VideoDescription";
+            this.VideoDescription.ReadOnly = true;
+            this.VideoDescription.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+            this.VideoDescription.Size = new System.Drawing.Size(283, 246);
+            this.VideoDescription.TabIndex = 8;
+            this.VideoDescription.Text = "";
+            // 
             // BrowseWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(774, 362);
-            this.Controls.Add(this.VideoThumbnail);
             this.Controls.Add(this.VideoDescription);
+            this.Controls.Add(this.VideoThumbnail);
             this.Controls.Add(this.SearchResults);
             this.Controls.Add(this.Videos);
             this.Controls.Add(this.Status);
@@ -187,7 +187,7 @@
         private System.Windows.Forms.ColumnHeader VideoUploader;
         private System.Windows.Forms.NumericUpDown SearchResults;
         private System.Windows.Forms.ColumnHeader VideoType;
-        private System.Windows.Forms.TextBox VideoDescription;
         private System.Windows.Forms.PictureBox VideoThumbnail;
+        private System.Windows.Forms.RichTextBox VideoDescription;
     }
 }

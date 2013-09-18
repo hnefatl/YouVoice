@@ -16,6 +16,7 @@ namespace YouVoice
         #region Members
 
         protected Listener CommandReceiver;
+        protected Listener ListenListener;
 
         protected delegate void VoidDelegate();
 
@@ -27,15 +28,16 @@ namespace YouVoice
         {
             // Initialise the functions
             CommandReceiver = new Listener();
-            InitialiseCommandReceiver();
-
+            ListenListener = new Listener();
+            InitialiseCommandReceivers();
 
             InitializeComponent();
 
+            StartListening();
             CommandReceiver.Start();
         }
 
-        public void InitialiseCommandReceiver()
+        public void InitialiseCommandReceivers()
         {
             // Add the commands
             CommandReceiver.AddCommand(new Command("Play", Play, new List<string>() { "Play", "Start", "Begin" }));
@@ -48,8 +50,9 @@ namespace YouVoice
             CommandReceiver.AddCommand(new Command("Windowed", Windowed, new List<string>() { "Windowed", "Small" }));
             CommandReceiver.AddCommand(new Command("Browse", Browse, new List<string>() { "Browse", "Search", "Find" }));
             CommandReceiver.AddCommand(new Command("Exit", Exit, new List<string>() { "Exit", "Quit", "Close" }));
-            CommandReceiver.AddCommand(new Command("StartListening", StartListening, new List<string>() { "Start Listening" }));
             CommandReceiver.AddCommand(new Command("StopListening", StopListening, new List<string>() { "Stop Listening" }));
+
+            ListenListener.AddCommand(new Command("StartListening", StartListening, new List<string>() { "Start Listening" }));
         }
 
         #region Command Handlers
@@ -204,7 +207,8 @@ namespace YouVoice
             else
             {
                 StatusLabel.Text = "Listening";
-                CommandReceiver.Listening = true;
+                ListenListener.Disable();
+                CommandReceiver.Enable();
             }
         }
         protected void StopListening()
@@ -216,7 +220,8 @@ namespace YouVoice
             else
             {
                 StatusLabel.Text = "Not listening";
-                CommandReceiver.Listening = false;
+                CommandReceiver.Disable();
+                ListenListener.Enable();
             }
         }
         #endregion

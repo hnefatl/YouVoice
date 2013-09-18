@@ -7,35 +7,12 @@ using SpeechLib;
 
 namespace YouVoice
 {
-    public delegate void ListenerEvent();
-
     public class Listener
+        : ListenerBase
     {
-        #region Members
-
-        protected SpeechRecognitionEngine Recog;
-
-        public bool Listening;
-        public bool Running;
-
-        protected Thread ListeningThread;
-
-        public List<Command> Commands;
-
-        #endregion
-
         public Listener(bool UseBabbleGuard = true)
+            : base()
         {
-            // Give base values to variables
-            Recog = new SpeechRecognitionEngine(System.Globalization.CultureInfo.CurrentCulture);
-            Commands = new List<Command>();
-
-            // Initialise the Listening thread
-            ListeningThread = new Thread(new ThreadStart(Listen));
-
-            Listening = false;
-            Running = false;
-
             if (UseBabbleGuard)
             {
                 // Implement a babble guard - protection from background noise
@@ -43,59 +20,8 @@ namespace YouVoice
             }
         }
 
-        public void AddCommand(Command NewCommand)
+        protected override void Listen()
         {
-            Commands.Add(NewCommand);
-            Recog.LoadGrammar(new Grammar(new GrammarBuilder(new Choices(NewCommand.Commands.ToArray())) { Culture = System.Globalization.CultureInfo.CurrentCulture }) { Name = NewCommand.Name });
-        }
-        public void AddCommand(List<Command> Commands)
-        {
-            foreach (Command c in Commands)
-            {
-                AddCommand(c);
-            }
-        }
-
-        public void UnloadCommands()
-        {
-            Recog.UnloadAllGrammars();
-            Commands.Clear();
-        }
-
-        public void Start()
-        {
-            if (ListeningThread.ThreadState != ThreadState.Running)
-            {
-                Running = true;
-                ListeningThread.Start();
-                Enable();
-            }
-        }
-        public void Stop()
-        {
-            if (ListeningThread.ThreadState != ThreadState.Stopped)
-            {
-                Listening = false;
-                Running = false;
-                while (ListeningThread.ThreadState != ThreadState.Stopped)
-                {
-                    Thread.Sleep(100);
-                }
-            }
-        }
-
-        public void Enable()
-        {
-            Recog.SetInputToDefaultAudioDevice();
-        }
-        public void Disable()
-        {
-            Recog.SetInputToNull();
-        }
-
-        protected void Listen()
-        {
-            Listening = true;
             while (Running)
             {
                 // Recognise a string and get the grammar it was found from (effectively getting the command,
